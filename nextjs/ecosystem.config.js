@@ -18,8 +18,8 @@ module.exports = {
       },
 
       // Logging
-      error_file: "./logs/web-error.log",
-      out_file: "./logs/web-out.log",
+      error_file: "/var/www/cms/logs/web-error.log",
+      out_file: "/var/www/cms/logs/web-out.log",
       log_date_format: "YYYY-MM-DD HH:mm:ss Z",
       merge_logs: true,
 
