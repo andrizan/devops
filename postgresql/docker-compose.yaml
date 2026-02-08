@@ -1,10 +1,10 @@
 services:
   postgres:
-    image: postgres:16-bookworm
+    image: postgres:18-trixie
     ports:
       - 5432:5432
     volumes:
-      - pg_data_local:/var/lib/postgresql/data
+      - pg_data_local:/var/lib/postgresql
     environment:
       - POSTGRES_PASSWORD=admin
       # - POSTGRES_USER=postgres

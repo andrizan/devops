@@ -1,0 +1,32 @@
+services:
+  qdrant:
+    image: qdrant/qdrant:latest
+    restart: unless-stopped
+    container_name: qdrant
+    ports:
+      - 127.0.0.1:6333:6333
+    expose:
+      - 6333
+      - 6334
+      - 6335
+    environment:
+      - QDRANT__SERVICE__API_KEY=${QDRANT_API_KEY:-your-secure-api-key-here} #openssl rand -base64 32
+    configs:
+      - source: qdrant_config
+        target: /qdrant/config/production.yaml
+    volumes:
+      - qdrant_data:/qdrant/storage
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+configs:
+  qdrant_config:
+    content: |
+      log_level: INFO
+
+volumes:
+  qdrant_data:
+    driver: local
