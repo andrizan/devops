@@ -1,0 +1,47 @@
+services:
+  gitlab-runner:
+    image: gitlab/gitlab-runner:ubuntu-v18.9.0
+    container_name: gitlab-runner-01
+    restart: unless-stopped
+    privileged: true
+
+    volumes:
+      # Konfigurasi runner
+      - /srv/gitlab-runner/config:/etc/gitlab-runner
+
+      # Docker socket
+      - /var/run/docker.sock:/var/run/docker.sock
+
+      # Cache PHP (Composer)
+      - /srv/gitlab-runner/cache/composer:/root/.composer/cache
+
+      # Cache Node.js
+      - /srv/gitlab-runner/cache/npm:/root/.npm
+      - /srv/gitlab-runner/cache/yarn:/root/.yarn
+      - /srv/gitlab-runner/cache/pnpm:/root/.local/share/pnpm/store
+
+      # Cache Golang
+      - /srv/gitlab-runner/cache/go/pkg:/root/go/pkg
+      - /srv/gitlab-runner/cache/go/build:/root/.cache/go-build
+
+      # Cache Docker BuildKit
+      - /srv/docker-buildkit-cache:/buildkit-cache
+
+      # Cache umum
+      - /srv/gitlab-runner/cache:/cache
+
+    environment:
+      - DOCKER_HOST=unix:///var/run/docker.sock
+
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "50m"
+        max-file: "5"
+
+    networks:
+      - gitlab-runner-net
+
+networks:
+  gitlab-runner-net:
+    driver: bridge

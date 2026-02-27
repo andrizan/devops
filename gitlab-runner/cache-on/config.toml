@@ -1,0 +1,79 @@
+concurrent = 6
+check_interval = 0
+
+[session_server]
+  session_timeout = 3600
+
+[[runners]]
+  name = "gitlab-runner-01"
+  url = "https://gitlab.com"
+  token = "SECRET_TOKEN"
+  executor = "docker"
+  request_concurrency = 6
+  tag_list = ["install", "test", "build", "deploy", "release", "shared"]
+
+  [runners.custom_build_dir]
+
+  [runners.cache]
+    MaxUploadedArchiveSize = 0
+
+  [runners.docker]
+    tls_verify = false
+    image = "ubuntu:24.04"
+    privileged = true
+    disable_entrypoint_overwrite = false
+    oom_kill_disable = false
+    disable_cache = false
+
+    volumes = [
+      "/srv/gitlab-runner/cache:/cache:rw",
+
+      # PHP (Composer)
+      "/srv/gitlab-runner/cache/composer:/root/.composer/cache:rw",
+
+      # Node.js
+      "/srv/gitlab-runner/cache/npm:/root/.npm:rw",
+      "/srv/gitlab-runner/cache/yarn:/root/.yarn:rw",
+      "/srv/gitlab-runner/cache/pnpm:/root/.local/share/pnpm/store:rw",
+
+      # Golang
+      "/srv/gitlab-runner/cache/go/pkg:/root/go/pkg:rw",          # Go module cache
+      "/srv/gitlab-runner/cache/go/build:/root/.cache/go-build:rw", # Go build cache
+
+      # Docker BuildKit
+      "/srv/docker-buildkit-cache:/buildkit-cache:rw",
+
+      "/var/run/docker.sock:/var/run/docker.sock",
+      "/certs/client",
+    ]
+
+    shm_size = 2147483648
+    cpus = "0.8"
+    memory = "1300m"
+    memory_swap = "1300m"
+    memory_reservation = "900m"
+    network_mode = "bridge"
+    pull_policy = ["if-not-present"]
+    helper_image = "gitlab/gitlab-runner-helper:ubuntu-x86_64-v18.9.0"
+
+    environment = [
+      "DOCKER_DRIVER=overlay2",
+      "DOCKER_TLS_CERTDIR=/certs",
+      "DOCKER_BUILDKIT=1",
+      "BUILDKIT_INLINE_CACHE=1",
+
+      # Golang cache path
+      "GOPATH=/root/go",
+      "GOCACHE=/root/.cache/go-build",
+      "GOMODCACHE=/root/go/pkg/mod",
+
+      # Composer cache path
+      "COMPOSER_CACHE_DIR=/root/.composer/cache",
+
+      # npm cache path
+      "NPM_CONFIG_CACHE=/root/.npm",
+    ]
+
+  [runners.docker.tmpfs]
+    "/tmp" = "rw,noexec,nosuid,size=512m"
+    "/run" = "rw,noexec,nosuid,size=512m"
