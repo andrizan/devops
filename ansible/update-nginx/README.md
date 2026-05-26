@@ -15,7 +15,7 @@ Playbook ini melakukan:
 
 ## 2. Siapkan daftar host
 
-Edit file [host.ini](D:\Dev\www\DEVOPS\ansible\update-nginx\host.ini):
+Edit file [host.ini](./host.ini):
 
 ```ini
 [nginx_targets]
