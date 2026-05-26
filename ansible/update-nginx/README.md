@@ -25,6 +25,8 @@ app02 ansible_host=10.10.10.12 ansible_user=ubuntu ansible_ssh_private_key_file=
 [nginx_targets:vars]
 ansible_port=22
 ansible_python_interpreter=auto_silent
+# Optional global SSH options:
+ansible_ssh_common_args='-o StrictHostKeyChecking=no'
 ```
 
 ## 3. Cek koneksi SSH (opsional tapi disarankan)
