@@ -1,0 +1,27 @@
+services:
+  postgres:
+    container_name: timescaledb
+    image: timescale/timescaledb:latest-pg17
+    ports:
+      - 5433:5432
+    volumes:
+      - ./data:/var/lib/postgresql/data
+    environment:
+      - POSTGRES_PASSWORD=admin
+      # - POSTGRES_USER=postgres
+  # pg-admin4:
+  #   image: dpage/pgadmin4:latest
+  #   ports:
+  #     - 5050:80
+  #   environment:
+  #     PGADMIN_DEFAULT_EMAIL: admin@admin.com
+  #     PGADMIN_DEFAULT_PASSWORD: root
+  #   volumes:
+  #     - pgadmin-data:/var/lib/pgadmin
+
+
+volumes:
+  pg_data_local:
+    driver: local
+  # pgadmin-data:
+  #   driver: local

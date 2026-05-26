@@ -1,4 +1,4 @@
-FROM mongo:7.0-jammy
+FROM mongo:8.0-noble
 RUN openssl rand -base64 756 > /etc/mongo-keyfile
 RUN chmod 400 /etc/mongo-keyfile
 RUN chown mongodb:mongodb /etc/mongo-keyfile

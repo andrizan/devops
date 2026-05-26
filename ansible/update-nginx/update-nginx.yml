@@ -1,0 +1,116 @@
+---
+- name: Switch to official NGINX repo and update package
+  hosts: nginx_targets
+  become: true
+  gather_facts: true
+  serial: "{{ rollout_batch | default('20%') }}"
+  max_fail_percentage: 20
+
+  vars:
+    nginx_key_url: "https://nginx.org/keys/nginx_signing.key"
+    nginx_key_tmp_path: "/tmp/nginx_signing.key"
+    nginx_keyring_path: "/usr/share/keyrings/nginx-archive-keyring.gpg"
+    nginx_fingerprint: "573BFD6B3D8FBC641079A6ABABF5BD827BD9BF62"
+    nginx_repo_file: "/etc/apt/sources.list.d/nginx.list"
+    nginx_pref_file: "/etc/apt/preferences.d/99nginx"
+
+  tasks:
+    - name: Ensure target is Ubuntu 20.04 or newer
+      ansible.builtin.assert:
+        that:
+          - ansible_facts["distribution"] == "Ubuntu"
+          - ansible_facts["distribution_version"] is version("20.04", ">=")
+        fail_msg: "Playbook ini untuk Ubuntu Server 20.04 ke atas."
+
+    - name: Install repository prerequisites
+      ansible.builtin.apt:
+        name:
+          - curl
+          - gnupg2
+          - ca-certificates
+          - lsb-release
+          - ubuntu-keyring
+        state: present
+        update_cache: true
+
+    - name: Download official NGINX signing key
+      ansible.builtin.get_url:
+        url: "{{ nginx_key_url }}"
+        dest: "{{ nginx_key_tmp_path }}"
+        mode: "0644"
+
+    - name: Build keyring from downloaded key
+      ansible.builtin.command:
+        cmd: "gpg --dearmor --yes --output {{ nginx_keyring_path }} {{ nginx_key_tmp_path }}"
+      changed_when: true
+
+    - name: Verify downloaded key fingerprint
+      ansible.builtin.command:
+        cmd: "gpg --dry-run --quiet --no-keyring --import --import-options import-show {{ nginx_keyring_path }}"
+      register: nginx_key_check
+      changed_when: false
+
+    - name: Remove keyring when fingerprint is unexpected
+      block:
+        - name: Assert official NGINX fingerprint
+          ansible.builtin.assert:
+            that:
+              - nginx_fingerprint in (nginx_key_check.stdout + nginx_key_check.stderr)
+            fail_msg: "Fingerprint key NGINX tidak sesuai referensi resmi."
+      rescue:
+        - name: Delete invalid keyring
+          ansible.builtin.file:
+            path: "{{ nginx_keyring_path }}"
+            state: absent
+        - name: Stop execution after invalid fingerprint
+          ansible.builtin.fail:
+            msg: "Fingerprint key tidak valid, keyring sudah dihapus."
+
+    - name: Configure official NGINX apt repository
+      ansible.builtin.copy:
+        dest: "{{ nginx_repo_file }}"
+        mode: "0644"
+        content: |
+          deb [signed-by={{ nginx_keyring_path }}] http://nginx.org/packages/ubuntu {{ ansible_facts["distribution_release"] }} nginx
+
+    - name: Prefer packages from nginx.org
+      ansible.builtin.copy:
+        dest: "{{ nginx_pref_file }}"
+        mode: "0644"
+        content: |
+          Package: *
+          Pin: origin nginx.org
+          Pin: release o=nginx
+          Pin-Priority: 900
+
+    - name: Update apt cache after repo change
+      ansible.builtin.apt:
+        update_cache: true
+
+    - name: Check candidate source for nginx package
+      ansible.builtin.command:
+        cmd: "apt-cache policy nginx"
+      register: nginx_policy
+      changed_when: false
+
+    - name: Ensure nginx candidate comes from nginx.org repository
+      ansible.builtin.assert:
+        that:
+          - "'nginx.org/packages/ubuntu' in nginx_policy.stdout"
+        fail_msg: "Candidate nginx belum berasal dari repo resmi nginx.org."
+
+    - name: Install or update nginx from official repository
+      ansible.builtin.apt:
+        name: nginx
+        state: latest
+
+    - name: Ensure nginx service is enabled and running
+      ansible.builtin.service:
+        name: nginx
+        enabled: true
+        state: started
+
+    - name: Remove temporary downloaded key
+      ansible.builtin.file:
+        path: "{{ nginx_key_tmp_path }}"
+        state: absent
