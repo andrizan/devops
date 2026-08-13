@@ -6,7 +6,7 @@ services:
     environment:
       ACCEPT_EULA: "Y"
       MSSQL_PID: "Express"
-      MSSQL_SA_PASSWORD: "PASS"
+      MSSQL_SA_PASSWORD: "Admin123"
     ports:
       - 1433:1433
     volumes:
