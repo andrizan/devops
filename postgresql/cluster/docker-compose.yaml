@@ -107,7 +107,7 @@ services:
       placement:
         max_replicas_per_node: 1
   pg-pool:
-    image: bitnami/pgpool:latest
+    image: soldevelo/pgpool:latest
     ports:
       - 5432:5432
     environment:
